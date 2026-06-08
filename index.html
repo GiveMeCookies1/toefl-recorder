@@ -1,317 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>TOEFL Speaking Recorder</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>TOEFL Speaking — Recorder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* ----------------------------------------------------------
-     TOEFL Speaking Recorder
-     Edit TASKS below to change prep/response seconds per task.
-     ---------------------------------------------------------- */
+  /* ============ CONFIG-DRIVEN THEME ============ */
   :root{
-    --ink:#1b1714;
-    --paper:#f4efe7;
-    --paper-2:#ece4d7;
-    --crimson:#950E0E;
-    --crimson-deep:#6f0a0a;
-    --green:#1f7a4d;
-    --muted:#7a7066;
-    --line:#d8cdbb;
-    --shadow:0 18px 40px -22px rgba(40,20,10,.55);
+    --paper:#F4F1EA;
+    --paper-2:#EDE8DD;
+    --ink:#1C1B19;
+    --ink-soft:#55514A;
+    --line:#D8D2C4;
+    --teal:#2F5D54;
+    --teal-soft:#3d7468;
+    --rec:#C0392B;
+    --rec-soft:#e0584a;
+    --ok:#2F5D54;
+    --shadow:0 1px 2px rgba(28,27,25,.04),0 8px 24px -12px rgba(28,27,25,.18);
+    --radius:14px;
   }
   *{box-sizing:border-box}
-  html,body{margin:0}
+  html,body{margin:0;padding:0}
   body{
-    font-family:"Spline Sans",sans-serif;
     background:
-      radial-gradient(120% 80% at 80% -10%, #fbf7f0 0%, transparent 55%),
-      radial-gradient(100% 70% at -10% 110%, #efe6d6 0%, transparent 50%),
+      radial-gradient(1200px 600px at 80% -10%, rgba(47,93,84,.06), transparent 60%),
       var(--paper);
     color:var(--ink);
-    min-height:100dvh;
-    display:flex;
-    justify-content:center;
-    padding:28px 18px 56px;
-    line-height:1.5;
+    font-family:"Hanken Grotesk",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
+    min-height:100dvh;
+    line-height:1.5;
   }
-  .wrap{width:100%;max-width:520px}
-
-  header{margin-bottom:22px}
-  .kicker{
-    font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;
-    color:var(--crimson);font-weight:600;margin:0 0 6px;
-  }
-  h1{
-    font-family:"Fraunces",serif;font-weight:900;font-size:2.1rem;
-    line-height:1.04;margin:0 0 8px;letter-spacing:-.01em;
-  }
-  .sub{color:var(--muted);font-size:.92rem;margin:0}
-
+  .wrap{max-width:680px;margin:0 auto;padding:28px 20px 64px}
   .card{
-    background:rgba(255,253,249,.7);
+    background:var(--paper);
     border:1px solid var(--line);
-    border-radius:18px;
-    padding:20px;
+    border-radius:var(--radius);
     box-shadow:var(--shadow);
-    backdrop-filter:blur(4px);
-    margin-top:18px;
+    padding:26px 24px;
   }
-  label.field{display:block;margin-bottom:16px}
-  label.field span{
-    display:block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--muted);font-weight:600;margin-bottom:7px;
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:1.9rem;line-height:1.1;margin:0 0 6px}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:1.4rem;margin:0 0 4px}
+  .sub{color:var(--ink-soft);font-size:.95rem;margin:0 0 22px}
+  label{display:block;font-weight:600;font-size:.82rem;letter-spacing:.02em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 6px}
+  input[type=text],input[type=email]{
+    width:100%;font:inherit;font-size:1rem;padding:12px 14px;
+    border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);
   }
-  input[type=text]{
-    width:100%;font:inherit;font-size:1rem;padding:11px 13px;
-    border:1px solid var(--line);border-radius:11px;background:#fffdf9;color:var(--ink);
-  }
-  input[type=text]:focus{outline:2px solid var(--crimson);border-color:transparent}
+  input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(47,93,84,.12)}
+  button{font:inherit;cursor:pointer;border:none;border-radius:10px;font-weight:600}
+  .btn-primary{background:var(--teal);color:#fff;padding:13px 22px;font-size:1rem;width:100%;transition:background .15s}
+  .btn-primary:hover{background:var(--teal-soft)}
+  .btn-primary:disabled{background:#b9c5c1;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--teal);border:1px solid var(--line);padding:11px 18px}
+  .btn-ghost:disabled{color:#b3aea3;cursor:not-allowed}
+  .hidden{display:none !important}
 
-  .tasks{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:4px}
-  .task-btn{
-    text-align:left;cursor:pointer;font:inherit;
-    border:1px solid var(--line);background:#fffdf9;border-radius:12px;
-    padding:11px 13px;transition:.15s;
-  }
-  .task-btn b{display:block;font-family:"Fraunces",serif;font-weight:600;font-size:1.02rem}
-  .task-btn small{color:var(--muted);font-size:.78rem}
-  .task-btn[aria-pressed=true]{
-    background:var(--crimson);border-color:var(--crimson);color:#fff;
-  }
-  .task-btn[aria-pressed=true] small{color:#f3d4d4}
+  /* progress */
+  .progress-rail{display:flex;gap:5px;margin:0 0 22px}
+  .pip{flex:1;height:5px;border-radius:3px;background:var(--paper-2);border:1px solid var(--line);transition:background .25s}
+  .pip.done{background:var(--ok);border-color:var(--ok)}
+  .pip.active{background:var(--teal-soft);border-color:var(--teal-soft)}
+  .crumb{font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:10px}
 
-  /* Stage */
-  .stage{margin-top:18px;text-align:center;display:none}
-  .stage.on{display:block}
-  .phase{
-    font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;
-    color:var(--muted);margin-bottom:6px;height:1.1em;
+  .instructions{
+    background:var(--paper-2);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;font-size:.97rem;color:var(--ink);margin:14px 0 22px;line-height:1.55;
   }
-  .phase.prep{color:var(--crimson)}
-  .phase.rec{color:var(--green)}
-  .clock{
-    font-family:"Fraunces",serif;font-weight:900;font-size:4.4rem;line-height:1;
-    letter-spacing:-.02em;font-variant-numeric:tabular-nums;
-  }
-  .bar{height:7px;background:var(--paper-2);border-radius:99px;overflow:hidden;margin:16px 0 4px}
-  .bar > i{display:block;height:100%;width:100%;background:var(--crimson);transition:width .25s linear}
-  .bar.rec > i{background:var(--green)}
-  .dot{
-    display:inline-block;width:9px;height:9px;border-radius:50%;
-    background:var(--green);margin-right:7px;vertical-align:middle;
-    animation:pulse 1s infinite;
-  }
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .media-zone{margin:0 0 20px;text-align:center}
+  iframe.video{width:100%;aspect-ratio:16/9;border:1px solid var(--line);border-radius:10px;background:#000}
 
-  .btn-row{display:flex;gap:10px;margin-top:18px}
-  button.action{
-    flex:1;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;
-    padding:14px;border-radius:13px;border:0;transition:.15s;
+  /* play / record controls */
+  .controls{display:flex;flex-direction:column;gap:12px;align-items:center}
+  .play-btn{
+    display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+    color:var(--ink);padding:13px 22px;border-radius:999px;font-weight:600;box-shadow:var(--shadow)
   }
-  .primary{background:var(--crimson);color:#fff}
-  .primary:hover{background:var(--crimson-deep)}
-  .ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
-  .ghost:hover{background:#fffdf9}
-  button:disabled{opacity:.45;cursor:default}
+  .play-btn:disabled{opacity:.45;cursor:not-allowed}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--teal)}
 
-  .review{display:none;margin-top:18px}
-  .review.on{display:block}
-  audio{width:100%;margin:6px 0 14px}
-  .dl{
-    display:block;text-align:center;text-decoration:none;font-weight:600;
-    background:var(--green);color:#fff;padding:14px;border-radius:13px;
+  .rec-btn{
+    display:inline-flex;align-items:center;gap:12px;background:var(--rec);color:#fff;
+    padding:16px 30px;border-radius:999px;font-size:1.05rem;box-shadow:0 8px 24px -10px rgba(192,57,43,.6);
+    transition:background .15s,transform .1s
   }
-  .hint{font-size:.84rem;color:var(--muted);margin-top:14px;text-align:center}
-  .err{
-    background:#fce9e9;border:1px solid #f1c0c0;color:#8a1414;
-    padding:12px 14px;border-radius:11px;font-size:.88rem;margin-top:14px;display:none;
+  .rec-btn:hover{background:var(--rec-soft)}
+  .rec-btn:disabled{background:#cbb6b2;box-shadow:none;cursor:not-allowed}
+  .rec-btn .mic{width:12px;height:12px;border-radius:50%;background:#fff}
+
+  .timer{
+    font-family:"Fraunces",serif;font-variant-numeric:tabular-nums;font-size:3.2rem;font-weight:600;
+    line-height:1;margin:6px 0;letter-spacing:.01em
   }
-  .err.on{display:block}
-  footer{margin-top:26px;text-align:center;color:var(--muted);font-size:.76rem}
+  .timer.live{color:var(--rec)}
+  .ring{position:relative;width:132px;height:132px;margin:6px auto 4px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .pulse{animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .status{font-size:.95rem;color:var(--ink-soft);min-height:1.3em;text-align:center;margin-top:6px}
+  .status.ok{color:var(--ok);font-weight:600}
+  .status.err{color:var(--rec);font-weight:600}
+
+  .done-list{list-style:none;padding:0;margin:18px 0 0}
+  .done-list li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+  .done-list li:last-child{border-bottom:none}
+  .check{width:20px;height:20px;border-radius:50%;background:var(--ok);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0}
+  .foot{margin-top:18px;font-size:.82rem;color:var(--ink-soft);text-align:center;line-height:1.5}
+  .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <p class="kicker">Speaking Practice</p>
-    <h1>TOEFL&nbsp;Speaking Recorder</h1>
-    <p class="sub">Record under real test timing, play it back, then download and upload your file to the practice form.</p>
-  </header>
 
-  <!-- SETUP -->
-  <section class="card" id="setup">
-    <label class="field">
-      <span>Your name or email</span>
-      <input type="text" id="student" placeholder="e.g. yuki.tanaka@example.com" autocomplete="off">
-    </label>
-    <label class="field" style="margin-bottom:10px">
-      <span>Choose a task</span>
-    </label>
-    <div class="tasks" id="tasks"></div>
-    <div class="err" id="err"></div>
-    <div class="btn-row">
-      <button class="action primary" id="start">Start task</button>
+  <!-- ===================== SCREEN: INTRO ===================== -->
+  <section id="screen-intro" class="card">
+    <h1>Speaking Section</h1>
+    <p class="sub">You will complete 11 spoken tasks. Each one plays once, then you record your answer. Recording uploads automatically. Find a quiet room and allow microphone access when prompted.</p>
+    <label for="name">Full name</label>
+    <input id="name" type="text" autocomplete="name" placeholder="As it appears on your test" />
+    <label for="email">Email <span style="text-transform:none;font-weight:400">(optional)</span></label>
+    <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
+    <div style="margin-top:24px">
+      <button id="begin-btn" class="btn-primary">Allow microphone &amp; begin</button>
     </div>
+    <p id="intro-status" class="status err" style="margin-top:14px"></p>
   </section>
 
-  <!-- STAGE -->
-  <section class="stage" id="stage">
-    <div class="phase" id="phase">&nbsp;</div>
-    <div class="clock" id="clock">0:00</div>
-    <div class="bar" id="bar"><i id="fill"></i></div>
-    <div class="btn-row">
-      <button class="action ghost" id="skip">Skip to speaking</button>
-      <button class="action primary" id="stopBtn">Stop &amp; finish</button>
-    </div>
+  <!-- ===================== SCREEN: LOADING ===================== -->
+  <section id="screen-loading" class="card hidden" style="text-align:center">
+    <div class="spinner"></div>
+    <p class="sub" style="margin:0">Loading your tasks…</p>
   </section>
 
-  <!-- REVIEW -->
-  <section class="review" id="review">
-    <div class="card">
-      <audio id="player" controls></audio>
-      <a class="dl" id="download" download>⬇ Download recording</a>
-      <p class="hint" id="dlhint"></p>
-      <div class="btn-row">
-        <button class="action ghost" id="redo">Record again</button>
+  <!-- ===================== SCREEN: TASK ===================== -->
+  <section id="screen-task" class="card hidden">
+    <div class="progress-rail" id="rail"></div>
+    <div class="crumb" id="crumb">Speaking 1 of 11</div>
+    <h2 id="task-title">Listen and Repeat</h2>
+    <div class="instructions" id="task-instructions"></div>
+
+    <div class="media-zone" id="media-zone"></div>
+
+    <div class="controls">
+      <button id="play-btn" class="play-btn"><span class="dot"></span><span id="play-label">Play</span></button>
+
+      <div id="rec-area" style="text-align:center">
+        <div class="ring" id="ring-wrap">
+          <svg width="132" height="132" viewBox="0 0 132 132">
+            <circle cx="66" cy="66" r="58" fill="none" stroke="var(--line)" stroke-width="8"></circle>
+            <circle id="ring-fg" cx="66" cy="66" r="58" fill="none" stroke="var(--rec)" stroke-width="8"
+                    stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="0"></circle>
+          </svg>
+          <div class="val"><div class="timer" id="timer">0:00</div></div>
+        </div>
+        <button id="rec-btn" class="rec-btn" disabled><span class="mic"></span><span id="rec-label">Start recording</span></button>
       </div>
+
+      <p id="task-status" class="status"></p>
+      <button id="next-btn" class="btn-ghost hidden">Next task →</button>
     </div>
   </section>
 
-  <footer>Tip: on a phone, allow the microphone when asked. Works in Chrome and Safari.</footer>
+  <!-- ===================== SCREEN: DONE ===================== -->
+  <section id="screen-done" class="card hidden" style="text-align:center">
+    <div class="check" style="width:46px;height:46px;font-size:1.3rem;margin:6px auto 14px">✓</div>
+    <h2>All responses submitted</h2>
+    <p class="sub" id="done-sub">Your 11 speaking responses have been uploaded. You can close this tab and return to your test.</p>
+    <ul class="done-list" id="done-list"></ul>
+  </section>
+
+  <p class="foot">If a recording fails to upload, you’ll see a Retry button — your audio is kept, you won’t have to record again.</p>
 </div>
 
 <script>
-/* ===== Task config — edit the numbers to change timing (seconds) ===== */
-const TASKS = {
-  1:{label:"Task 1 · Independent", prep:15, speak:45},
-  2:{label:"Task 2 · Integrated",  prep:30, speak:60},
-  3:{label:"Task 3 · Integrated",  prep:30, speak:60},
-  4:{label:"Task 4 · Integrated",  prep:20, speak:60},
-};
+/* =================================================================
+   CONFIG
+   ================================================================= */
+const EXEC_URL = "https://script.google.com/macros/s/AKfycbwlkz5NRxaYeHUeNV-b0153BViTj7Bq5oCjoYYQnfJSTm4CucYeyWRO5gxEpVrv1r8T/exec";
+const RECORD_BUFFER_MS = 400; // tiny tail so the last word isn't clipped on auto-stop
 
+/* =================================================================
+   STATE
+   ================================================================= */
+let TASKS = [];
+let idx = 0;
+let student = { name: "", email: "" };
+let micStream = null;
+let recorder = null;
+let recordedBlob = null;
+let recMime = "audio/webm";
+let countdownTimer = null;
+let stopTimeout = null;
+
+/* =================================================================
+   HELPERS
+   ================================================================= */
 const $ = id => document.getElementById(id);
-let selected = 1, mediaStream=null, recorder=null, chunks=[], ticker=null, blobUrl=null, mime="";
+const show = id => $(id).classList.remove("hidden");
+const hide = id => $(id).classList.add("hidden");
 
-/* Build task buttons */
-const taskWrap = $("tasks");
-Object.entries(TASKS).forEach(([n,t])=>{
-  const b=document.createElement("button");
-  b.className="task-btn"; b.type="button";
-  b.setAttribute("aria-pressed", n==="1");
-  b.innerHTML=`<b>Task ${n}</b><small>${t.prep}s prep · ${t.speak}s speak</small>`;
-  b.onclick=()=>{ selected=+n; [...taskWrap.children].forEach(c=>c.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true"); };
-  taskWrap.appendChild(b);
+function api(payload){
+  return fetch(EXEC_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).then(r => r.json());
+}
+
+function isInterview(task){
+  return /interview/i.test(task.title || "") || ["S8","S9","S10","S11"].includes(task.task_id);
+}
+function extractId(s){
+  if(!s) return null;
+  let m = String(s).match(/\/file\/d\/([a-zA-Z0-9_-]+)/); if(m) return m[1];
+  m = String(s).match(/[?&]id=([a-zA-Z0-9_-]+)/); if(m) return m[1];
+  if(/^[a-zA-Z0-9_-]{10,80}$/.test(s)) return s;
+  return null;
+}
+function pickMime(){
+  const opts = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/aac","audio/ogg;codecs=opus"];
+  if(window.MediaRecorder && MediaRecorder.isTypeSupported){
+    for(const o of opts){ if(MediaRecorder.isTypeSupported(o)) return o; }
+  }
+  return ""; // let the browser decide
+}
+function extFor(mime){
+  if(/mp4|aac/.test(mime)) return "m4a";
+  if(/ogg/.test(mime)) return "ogg";
+  return "webm";
+}
+function blobToBase64(blob){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(",")[1]);
+    r.onerror = () => rej(new Error("Could not read recording"));
+    r.readAsDataURL(blob);
+  });
+}
+
+/* =================================================================
+   INTRO  →  permission + load tasks
+   ================================================================= */
+$("begin-btn").addEventListener("click", async () => {
+  const name = $("name").value.trim();
+  $("intro-status").textContent = "";
+  if(!name){ $("intro-status").textContent = "Please enter your name first."; return; }
+  student.name = name;
+  student.email = $("email").value.trim();
+  $("begin-btn").disabled = true;
+
+  // 1) microphone + recorder support
+  if(!navigator.mediaDevices || !window.MediaRecorder){
+    $("intro-status").textContent = "This browser can’t record audio. Use an up-to-date Chrome or Safari.";
+    $("begin-btn").disabled = false; return;
+  }
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  }catch(err){
+    $("intro-status").textContent = "Microphone access was blocked. Enable it in your browser settings and reload.";
+    $("begin-btn").disabled = false; return;
+  }
+  recMime = pickMime();
+
+  // 2) load tasks
+  hide("screen-intro"); show("screen-loading");
+  try{
+    const res = await api({ action:"getSpeaking" });
+    if(!res.ok) throw new Error(res.error || "Server error");
+    TASKS = (res.tasks || []).filter(t => t.task_id && /^S\d+/.test(t.task_id))
+                              .sort((a,b)=> (+a.task_id.slice(1)) - (+b.task_id.slice(1)));
+    if(!TASKS.length) throw new Error("No speaking tasks found");
+  }catch(err){
+    hide("screen-loading"); show("screen-intro");
+    $("intro-status").textContent = "Couldn’t load tasks: " + err.message;
+    $("begin-btn").disabled = false; return;
+  }
+
+  buildRail();
+  hide("screen-loading"); show("screen-task");
+  loadTask(0);
 });
 
-function showErr(msg){ const e=$("err"); e.textContent=msg; e.classList.add("on"); }
-function clearErr(){ $("err").classList.remove("on"); }
-function fmt(s){ const m=Math.floor(s/60); const r=s%60; return m+":"+String(r).padStart(2,"0"); }
-function pickMime(){
-  const opts=["audio/webm","audio/mp4","audio/ogg"];
-  for(const o of opts){ if(window.MediaRecorder && MediaRecorder.isTypeSupported(o)) return o; }
-  return "";
+function buildRail(){
+  const rail = $("rail"); rail.innerHTML = "";
+  TASKS.forEach(()=>{ const d=document.createElement("div"); d.className="pip"; rail.appendChild(d); });
 }
-function extFor(m){ if(m.includes("mp4"))return"m4a"; if(m.includes("ogg"))return"ogg"; return"webm"; }
-function safeName(s){ return (s||"student").trim().replace(/[^\w.@-]+/g,"_").slice(0,40) || "student"; }
-
-/* ---- Start: get mic, run prep timer, then record ---- */
-$("start").onclick = async () => {
-  clearErr();
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    showErr("This browser can't access the microphone. Try Chrome or Safari, and make sure the page address starts with https://"); return;
-  }
-  $("start").disabled = true;
-  try{
-    mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
-  }catch(e){
-    $("start").disabled = false;
-    if(e.name==="NotAllowedError") showErr("Microphone permission was blocked. Tap the lock/⋮ icon in the address bar, allow the microphone, then try again.");
-    else if(e.name==="NotFoundError") showErr("No microphone was found on this device.");
-    else showErr("Couldn't start the microphone: "+e.name);
-    return;
-  }
-  $("setup").style.display="none";
-  $("stage").classList.add("on");
-  runPrep();
-};
-
-function runPrep(){
-  const t=TASKS[selected];
-  if(t.prep<=0){ startRecording(); return; }
-  let left=t.prep;
-  $("phase").textContent="Preparation"; $("phase").className="phase prep";
-  $("bar").classList.remove("rec");
-  $("skip").style.display=""; $("stopBtn").style.display="none";
-  $("clock").textContent=fmt(left);
-  $("fill").style.background="";
-  $("fill").style.width="100%";
-  clearInterval(ticker);
-  ticker=setInterval(()=>{
-    left--;
-    $("clock").textContent=fmt(Math.max(left,0));
-    $("fill").style.width=(left/t.prep*100)+"%";
-    if(left<=0){ clearInterval(ticker); startRecording(); }
-  },1000);
+function paintRail(){
+  [...$("rail").children].forEach((p,i)=>{
+    p.className = "pip" + (i<idx ? " done" : i===idx ? " active" : "");
+  });
 }
 
-$("skip").onclick=()=>{ clearInterval(ticker); startRecording(); };
+/* =================================================================
+   TASK LIFECYCLE
+   ================================================================= */
+function loadTask(i){
+  idx = i;
+  recordedBlob = null;
+  clearInterval(countdownTimer); clearTimeout(stopTimeout);
+  const t = TASKS[i];
+  const interview = isInterview(t);
+  const secs = Number(t.response_seconds) || (interview ? 45 : 12);
+
+  paintRail();
+  $("crumb").textContent = `Speaking ${i+1} of ${TASKS.length}`;
+  $("task-title").textContent = t.title || (interview ? "Take an Interview" : "Listen and Repeat");
+  $("task-instructions").textContent = t.instructions || "";
+
+  // reset controls
+  $("task-status").textContent = ""; $("task-status").className = "status";
+  hide("next-btn");
+  $("rec-btn").disabled = true;
+  recBtnMode = "record";
+  $("rec-label").textContent = "Start recording";
+  setTimerDisplay(secs); setRing(1);
+
+  // media
+  const zone = $("media-zone"); zone.innerHTML = "";
+  const playBtn = $("play-btn"); playBtn.disabled = false; playBtn.onclick = null;
+  playBtn.querySelector(".dot").style.display = "";
+  $("play-label").textContent = interview ? "Watch the question" : "Play sentence";
+
+  if(interview){
+    // VIDEO — Drive preview iframe. Cannot enforce single view; manual start (by design).
+    const fid = extractId(t.audio_url);
+    const frame = document.createElement("iframe");
+    frame.className = "video";
+    frame.src = "https://drive.google.com/file/d/" + fid + "/preview";
+    frame.allow = "autoplay";
+    zone.appendChild(frame);
+    // video plays in-frame; the Play button just enables recording (student watches, then records)
+    playBtn.querySelector(".dot").style.display = "none";
+    playBtn.onclick = () => { playBtn.disabled = true; onMediaConsumed(); };
+  } else {
+    // AUDIO — fetch base64 via proxy, single play, then enable record
+    playBtn.disabled = true;
+    $("play-label").textContent = "Loading audio…";
+    api({ action:"getAudio", fileId: t.audio_url }).then(res => {
+      if(!res.ok || !res.dataUri) throw new Error(res.error || "audio");
+      const audio = new Audio(res.dataUri);
+      zone.appendChild(buildAudioHint());
+      playBtn.disabled = false;
+      $("play-label").textContent = "Play sentence";
+      playBtn.onclick = () => {
+        playBtn.disabled = true;
+        $("play-label").textContent = "Playing… (once only)";
+        audio.play();
+        audio.onended = () => { $("play-label").textContent = "Played"; onMediaConsumed(); };
+      };
+    }).catch(err => {
+      $("play-label").textContent = "Audio failed";
+      $("task-status").textContent = "Could not load audio: " + err.message + ". Reload the page.";
+      $("task-status").className = "status err";
+    });
+  }
+}
+
+function buildAudioHint(){
+  const p = document.createElement("p");
+  p.className = "sub";
+  p.style.margin = "0";
+  p.textContent = "You will hear this once. Recording becomes available after it plays.";
+  return p;
+}
+
+function onMediaConsumed(){
+  $("rec-btn").disabled = false;
+  $("task-status").textContent = "Recording is ready — press when you’re set to speak.";
+}
+
+/* =================================================================
+   RECORDING
+   ================================================================= */
+let recBtnMode = "record"; // "record" | "stop" | "retry"
+$("rec-btn").addEventListener("click", () => {
+  if(recBtnMode === "stop"){ stopRecording(); return; }
+  if(recBtnMode === "retry"){ recBtnMode = "record"; $("rec-btn").disabled = true; uploadRecording(); return; }
+  startRecording();
+});
 
 function startRecording(){
-  const t=TASKS[selected];
-  mime=pickMime();
-  chunks=[];
-  recorder = mime ? new MediaRecorder(mediaStream,{mimeType:mime}) : new MediaRecorder(mediaStream);
-  recorder.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
-  recorder.onstop=finish;
+  const t = TASKS[idx];
+  const secs = Number(t.response_seconds) || (isInterview(t) ? 45 : 12);
+  const chunks = [];
+  try{
+    recorder = recMime ? new MediaRecorder(micStream,{mimeType:recMime}) : new MediaRecorder(micStream);
+  }catch(e){ recorder = new MediaRecorder(micStream); }
+  recMime = recorder.mimeType || recMime;
+
+  recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    recordedBlob = new Blob(chunks, { type: recMime });
+    uploadRecording();
+  };
   recorder.start();
 
-  let left=t.speak;
-  $("phase").innerHTML='<span class="dot"></span>Recording'; $("phase").className="phase rec";
-  $("bar").classList.add("rec");
-  $("skip").style.display="none"; $("stopBtn").style.display="";
-  $("clock").textContent=fmt(left);
-  $("fill").style.width="100%";
-  clearInterval(ticker);
-  ticker=setInterval(()=>{
-    left--;
-    $("clock").textContent=fmt(Math.max(left,0));
-    $("fill").style.width=(left/t.speak*100)+"%";
-    if(left<=0){ clearInterval(ticker); if(recorder.state!=="inactive") recorder.stop(); }
-  },1000);
+  $("play-btn").disabled = true;
+  $("rec-label").textContent = "Stop";
+  recBtnMode = "stop";
+  $("rec-btn").classList.add("pulse");
+  $("timer").classList.add("live");
+  $("task-status").textContent = "Recording…"; $("task-status").className="status";
+
+  let remaining = secs;
+  setTimerDisplay(remaining); setRing(1);
+  countdownTimer = setInterval(() => {
+    remaining -= 1;
+    setTimerDisplay(Math.max(0,remaining));
+    setRing(Math.max(0,remaining)/secs);
+    if(remaining <= 0) clearInterval(countdownTimer);
+  }, 1000);
+  stopTimeout = setTimeout(stopRecording, secs*1000 + RECORD_BUFFER_MS);
 }
 
-$("stopBtn").onclick=()=>{ clearInterval(ticker); if(recorder&&recorder.state!=="inactive") recorder.stop(); };
+function stopRecording(){
+  clearInterval(countdownTimer); clearTimeout(stopTimeout);
+  $("rec-btn").classList.remove("pulse");
+  $("timer").classList.remove("live");
+  $("rec-btn").disabled = true;
+  $("rec-label").textContent = "Recorded";
+  if(recorder && recorder.state !== "inactive"){ try{ recorder.stop(); }catch(e){} }
+}
+
+async function uploadRecording(){
+  const t = TASKS[idx];
+  $("task-status").textContent = "Uploading…"; $("task-status").className="status";
+  try{
+    const base64 = await blobToBase64(recordedBlob);
+    const fileName = `${student.name.replace(/[^\w]+/g,"_")}_${t.task_id}_${Date.now()}.${extFor(recMime)}`;
+    const res = await api({
+      action:"upload", base64, fileName, mimeType:recMime,
+      studentName: student.name, taskId: t.task_id
+    });
+    if(!res.ok) throw new Error(res.error || "upload rejected");
+    $("task-status").textContent = "Uploaded ✓"; $("task-status").className="status ok";
+    show("next-btn");
+  }catch(err){
+    $("task-status").textContent = "Upload failed: " + err.message;
+    $("task-status").className = "status err";
+    showRetry();
+  }
+}
+
+function showRetry(){
+  recBtnMode = "retry";
+  $("rec-btn").disabled = false;
+  $("rec-label").textContent = "Retry upload";
+  $("rec-btn").classList.remove("pulse");
+}
+
+/* =================================================================
+   NAVIGATION
+   ================================================================= */
+$("next-btn").addEventListener("click", () => {
+  if(idx + 1 < TASKS.length){ loadTask(idx + 1); window.scrollTo({top:0,behavior:"smooth"}); }
+  else finish();
+});
 
 function finish(){
-  mediaStream.getTracks().forEach(t=>t.stop());
-  const blob=new Blob(chunks,{type: recorder.mimeType||mime||"audio/webm"});
-  if(blobUrl) URL.revokeObjectURL(blobUrl);
-  blobUrl=URL.createObjectURL(blob);
-
-  const ext=extFor(blob.type||mime);
-  const date=new Date().toISOString().slice(0,10);
-  const fname=`${safeName($("student").value)}_TOEFL_Speaking_Task${selected}_${date}.${ext}`;
-
-  $("player").src=blobUrl;
-  const dl=$("download"); dl.href=blobUrl; dl.setAttribute("download",fname);
-  $("dlhint").textContent="Saved as "+fname+" — upload this file to the practice form.";
-
-  $("stage").classList.remove("on");
-  $("review").classList.add("on");
-  if(blob.size<1500) showErr("That recording is very small — the mic may have been muted. Try again.");
+  paintRail();
+  [...$("rail").children].forEach(p=>p.className="pip done");
+  hide("screen-task"); show("screen-done");
+  const list = $("done-list");
+  TASKS.forEach(t=>{
+    const li=document.createElement("li");
+    li.innerHTML = `<span class="check">✓</span><span>${t.task_id} — ${t.title||""}</span>`;
+    list.appendChild(li);
+  });
+  if(micStream) micStream.getTracks().forEach(tr=>tr.stop());
 }
 
-$("redo").onclick=()=>{
-  $("review").classList.remove("on");
-  clearErr();
-  $("setup").style.display="";
-  $("start").disabled=false;
-};
+/* =================================================================
+   TIMER / RING RENDERING
+   ================================================================= */
+function setTimerDisplay(s){
+  const m = Math.floor(s/60), sec = s%60;
+  $("timer").textContent = m + ":" + String(sec).padStart(2,"0");
+}
+const RING_LEN = 2*Math.PI*58;
+$("ring-fg").setAttribute("stroke-dasharray", RING_LEN);
+function setRing(frac){ $("ring-fg").setAttribute("stroke-dashoffset", RING_LEN*(1-frac)); }
 </script>
 </body>
 </html>
