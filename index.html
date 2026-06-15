@@ -183,7 +183,7 @@
 /* =================================================================
    CONFIG
    ================================================================= */
-const EXEC_URL = "https://script.google.com/macros/s/AKfycbwlkz5NRxaYeHUeNV-b0153BViTj7Bq5oCjoYYQnfJSTm4CucYeyWRO5gxEpVrv1r8T/exec";
+const EXEC_URL = PARAMS.get("api") || "https://script.google.com/macros/s/AKfycbw…/exec";
 const RECORD_BUFFER_MS = 400; // tiny tail so the last word isn't clipped on auto-stop
 
 /* =================================================================
