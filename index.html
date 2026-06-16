@@ -15,11 +15,13 @@
     --ink:#1C1B19;
     --ink-soft:#55514A;
     --line:#D8D2C4;
-    --teal:#2F5D54;
-    --teal-soft:#3d7468;
+    --teal:#960606;
+    --teal-soft:#e60808;
     --rec:#C0392B;
     --rec-soft:#e0584a;
     --ok:#2F5D54;
+    --font-body: 'DM Sans', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
     --shadow:0 1px 2px rgba(28,27,25,.04),0 8px 24px -12px rgba(28,27,25,.18);
     --radius:14px;
   }
@@ -43,8 +45,8 @@
     box-shadow:var(--shadow);
     padding:26px 24px;
   }
-  h1{font-family:"Fraunces",serif;font-weight:600;font-size:1.9rem;line-height:1.1;margin:0 0 6px}
-  h2{font-family:"Fraunces",serif;font-weight:600;font-size:1.4rem;margin:0 0 4px}
+  h1{font-family:inherit;font-weight:600;font-size:1.9rem;line-height:1.1;margin:0 0 6px}
+  h2{font-family:inherit;font-weight:600;font-size:1.4rem;margin:0 0 4px}
   .sub{color:var(--ink-soft);font-size:.95rem;margin:0 0 22px}
   label{display:block;font-weight:600;font-size:.82rem;letter-spacing:.02em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 6px}
   input[type=text],input[type=email]{
@@ -59,6 +61,10 @@
   .btn-ghost{background:transparent;color:var(--teal);border:1px solid var(--line);padding:11px 18px}
   .btn-ghost:disabled{color:#b3aea3;cursor:not-allowed}
   .hidden{display:none !important}
+
+  /* volume meter */
+  .meter-rail{height:14px;background:var(--paper-2);border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:6px}
+  .meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--teal));border-radius:999px;transition:width .06s linear}
 
   /* progress */
   .progress-rail{display:flex;gap:5px;margin:0 0 22px}
@@ -128,7 +134,14 @@
     <label for="email">Email <span style="text-transform:none;font-weight:400">(optional)</span></label>
     <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
     <div style="margin-top:24px">
-      <button id="begin-btn" class="btn-primary">Allow microphone &amp; begin</button>
+      <button id="begin-btn" class="btn-primary">Allow microphone &amp; test it</button>
+    </div>
+
+    <div id="mic-check" class="hidden" style="margin-top:20px">
+      <label>Microphone check</label>
+      <div class="meter-rail"><div id="meter-fill" class="meter-fill"></div></div>
+      <p class="sub" id="mic-check-hint" style="margin:8px 0 0">Say something — the bar should move. If it stays flat, fix your system mic settings and reload.</p>
+      <button id="proceed-btn" class="btn-primary" style="margin-top:16px">Looks good — begin test</button>
     </div>
     <p id="intro-status" class="status err" style="margin-top:14px"></p>
   </section>
@@ -198,6 +211,8 @@ let recordedBlob = null;
 let recMime = "audio/webm";
 let countdownTimer = null;
 let stopTimeout = null;
+let meterRAF = null;
+let meterCtx = null;
 
 /* =================================================================
    HELPERS
@@ -279,7 +294,13 @@ $("begin-btn").addEventListener("click", async () => {
   }
   recMime = pickMime();
 
-  // 2) load tasks
+  startMeter();
+  hide("begin-btn");
+  show("mic-check");
+});
+
+$("proceed-btn").addEventListener("click", async () => {
+  stopMeter();
   hide("screen-intro"); show("screen-loading");
   try{
     const res = await api({ action:"getSpeaking" });
@@ -289,14 +310,45 @@ $("begin-btn").addEventListener("click", async () => {
     if(!TASKS.length) throw new Error("No speaking tasks found");
   }catch(err){
     hide("screen-loading"); show("screen-intro");
-    $("intro-status").textContent = "Couldn’t load tasks: " + err.message;
-    $("begin-btn").disabled = false; return;
+    show("begin-btn"); hide("mic-check");
+    $("intro-status").textContent = "Couldn't load tasks: " + err.message;
+    $("begin-btn").disabled = false;
+    startMeter(); // restore the meter on retry
+    return;
   }
-
   buildRail();
   hide("screen-loading"); show("screen-task");
   loadTask(0);
 });
+
+function startMeter(){
+  try{
+    meterCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = meterCtx.createMediaStreamSource(micStream);
+    const analyser = meterCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    const data = new Float32Array(analyser.fftSize);
+    const fill = $("meter-fill");
+    const tick = () => {
+      analyser.getFloatTimeDomainData(data);
+      let sum = 0;
+      for(const a of data) sum += a*a;
+      const level = Math.min(1, Math.sqrt(sum / data.length) * 2.5);
+      fill.style.width = (level*100).toFixed(1) + "%";
+      meterRAF = requestAnimationFrame(tick);
+    };
+    tick();
+  }catch(e){
+    $("mic-check-hint").textContent = "Live meter unavailable, but your mic is connected — you can begin.";
+  }
+}
+
+function stopMeter(){
+  if(meterRAF) cancelAnimationFrame(meterRAF);
+  meterRAF = null;
+  if(meterCtx){ meterCtx.close().catch(()=>{}); meterCtx = null; }
+}
 
 function buildRail(){
   const rail = $("rail"); rail.innerHTML = "";
