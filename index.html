@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Local mp3 encoder (verified build) — must sit next to index.html in the repo -->
+<script src="lame.min.js"></script>
 <style>
   /* ============ CONFIG-DRIVEN THEME ============ */
   :root{
@@ -198,6 +200,7 @@
    ================================================================= */
 const EXEC_URL = new URLSearchParams(location.search).get("api") || "https://script.google.com/macros/s/AKfycbwlkz5NRxaYeHUeNV-b0153BViTj7Bq5oCjoYYQnfJSTm4CucYeyWRO5gxEpVrv1r8T/exec";
 const RECORD_BUFFER_MS = 400; // tiny tail so the last word isn't clipped on auto-stop
+const MP3_KBPS = 96;          // mono speech: 96 is plenty; drop to 64 for smaller files
 
 /* =================================================================
    STATE
@@ -206,13 +209,19 @@ let TASKS = [];
 let idx = 0;
 let student = { name: "", email: "" };
 let micStream = null;
-let recorder = null;
 let recordedBlob = null;
-let recMime = "audio/webm";
 let countdownTimer = null;
 let stopTimeout = null;
 let meterRAF = null;
 let meterCtx = null;
+
+/* PCM-capture recording engine */
+let recCtx = null;        // AudioContext used while recording
+let recSource = null;     // MediaStreamSource
+let recProcessor = null;  // ScriptProcessor capturing PCM
+let pcmChunks = [];       // array of Float32Array
+let pcmLength = 0;        // total samples captured
+let recSampleRate = 44100;
 
 /* =================================================================
    HELPERS
@@ -232,8 +241,8 @@ async function api(payload, tries = 3){
       });
       const txt = await r.text();
       try{ return JSON.parse(txt); }
-      catch(e){ lastErr = new Error("server returned a non-JSON response"); } // transient Apps Script page
-    }catch(e){ lastErr = e; } // network blip
+      catch(e){ lastErr = new Error("server returned a non-JSON response"); }
+    }catch(e){ lastErr = e; }
     if(i < tries - 1) await new Promise(res => setTimeout(res, 600 * (i + 1)));
   }
   throw lastErr;
@@ -248,18 +257,6 @@ function extractId(s){
   m = String(s).match(/[?&]id=([a-zA-Z0-9_-]+)/); if(m) return m[1];
   if(/^[a-zA-Z0-9_-]{10,80}$/.test(s)) return s;
   return null;
-}
-function pickMime(){
-  const opts = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/aac","audio/ogg;codecs=opus"];
-  if(window.MediaRecorder && MediaRecorder.isTypeSupported){
-    for(const o of opts){ if(MediaRecorder.isTypeSupported(o)) return o; }
-  }
-  return ""; // let the browser decide
-}
-function extFor(mime){
-  if(/mp4|aac/.test(mime)) return "m4a";
-  if(/ogg/.test(mime)) return "ogg";
-  return "webm";
 }
 function blobToBase64(blob){
   return new Promise((res,rej)=>{
@@ -281,9 +278,12 @@ $("begin-btn").addEventListener("click", async () => {
   student.email = $("email").value.trim();
   $("begin-btn").disabled = true;
 
-  // 1) microphone + recorder support
-  if(!navigator.mediaDevices || !window.MediaRecorder){
+  if(!navigator.mediaDevices || !window.AudioContext && !window.webkitAudioContext){
     $("intro-status").textContent = "This browser can’t record audio. Use an up-to-date Chrome or Safari.";
+    $("begin-btn").disabled = false; return;
+  }
+  if(typeof lamejs === "undefined" && typeof window.lamejs === "undefined"){
+    $("intro-status").textContent = "The audio encoder failed to load (lame.min.js missing from the page). Reload the page.";
     $("begin-btn").disabled = false; return;
   }
   try{
@@ -292,7 +292,6 @@ $("begin-btn").addEventListener("click", async () => {
     $("intro-status").textContent = "Microphone access was blocked. Enable it in your browser settings and reload.";
     $("begin-btn").disabled = false; return;
   }
-  recMime = pickMime();
 
   startMeter();
   hide("begin-btn");
@@ -313,7 +312,7 @@ $("proceed-btn").addEventListener("click", async () => {
     show("begin-btn"); hide("mic-check");
     $("intro-status").textContent = "Couldn't load tasks: " + err.message;
     $("begin-btn").disabled = false;
-    startMeter(); // restore the meter on retry
+    startMeter();
     return;
   }
   buildRail();
@@ -376,7 +375,6 @@ function loadTask(i){
   $("task-title").textContent = t.title || (interview ? "Take an Interview" : "Listen and Repeat");
   $("task-instructions").textContent = t.instructions || "";
 
-  // reset controls
   $("task-status").textContent = ""; $("task-status").className = "status";
   hide("next-btn");
   $("rec-btn").disabled = true;
@@ -384,25 +382,21 @@ function loadTask(i){
   $("rec-label").textContent = "Start recording";
   setTimerDisplay(secs); setRing(1);
 
-  // media
   const zone = $("media-zone"); zone.innerHTML = "";
   const playBtn = $("play-btn"); playBtn.disabled = false; playBtn.onclick = null;
   playBtn.querySelector(".dot").style.display = "";
   $("play-label").textContent = interview ? "Watch the question" : "Play sentence";
 
   if(interview){
-    // VIDEO — Drive preview iframe. Cannot enforce single view; manual start (by design).
     const fid = extractId(t.audio_url);
     const frame = document.createElement("iframe");
     frame.className = "video";
     frame.src = "https://drive.google.com/file/d/" + fid + "/preview";
     frame.allow = "autoplay";
     zone.appendChild(frame);
-    // video plays in-frame; the Play button just enables recording (student watches, then records)
     playBtn.querySelector(".dot").style.display = "none";
     playBtn.onclick = () => { playBtn.disabled = true; onMediaConsumed(); };
   } else {
-    // AUDIO — fetch base64 via proxy, single play, then enable record
     playBtn.disabled = true;
     $("play-label").textContent = "Loading audio…";
     api({ action:"getAudio", fileId: t.audio_url }).then(res => {
@@ -439,7 +433,7 @@ function onMediaConsumed(){
 }
 
 /* =================================================================
-   RECORDING
+   RECORDING  (PCM capture → mp3)
    ================================================================= */
 let recBtnMode = "record"; // "record" | "stop" | "retry"
 $("rec-btn").addEventListener("click", () => {
@@ -451,18 +445,28 @@ $("rec-btn").addEventListener("click", () => {
 function startRecording(){
   const t = TASKS[idx];
   const secs = Number(t.response_seconds) || (isInterview(t) ? 45 : 12);
-  const chunks = [];
-  try{
-    recorder = recMime ? new MediaRecorder(micStream,{mimeType:recMime}) : new MediaRecorder(micStream);
-  }catch(e){ recorder = new MediaRecorder(micStream); }
-  recMime = recorder.mimeType || recMime;
 
-  recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
-  recorder.onstop = () => {
-    recordedBlob = new Blob(chunks, { type: recMime });
-    uploadRecording();
-  };
-  recorder.start();
+  // fresh PCM buffers
+  pcmChunks = []; pcmLength = 0;
+
+  try{
+    recCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(recCtx.state === "suspended") recCtx.resume();
+    recSampleRate = recCtx.sampleRate;
+    recSource = recCtx.createMediaStreamSource(micStream);
+    recProcessor = recCtx.createScriptProcessor(4096, 1, 1);
+    recProcessor.onaudioprocess = (e) => {
+      const ch = e.inputBuffer.getChannelData(0);
+      pcmChunks.push(new Float32Array(ch)); // clone — the buffer is reused
+      pcmLength += ch.length;
+    };
+    recSource.connect(recProcessor);
+    recProcessor.connect(recCtx.destination); // required so the node fires; output stays silent
+  }catch(err){
+    $("task-status").textContent = "Could not start the recorder: " + err.message;
+    $("task-status").className = "status err";
+    return;
+  }
 
   $("play-btn").disabled = true;
   $("rec-label").textContent = "Stop";
@@ -488,17 +492,104 @@ function stopRecording(){
   $("timer").classList.remove("live");
   $("rec-btn").disabled = true;
   $("rec-label").textContent = "Recorded";
-  if(recorder && recorder.state !== "inactive"){ try{ recorder.stop(); }catch(e){} }
+
+  // tear down capture nodes (keep micStream alive for later tasks)
+  try{ if(recProcessor){ recProcessor.disconnect(); recProcessor.onaudioprocess = null; } }catch(e){}
+  try{ if(recSource) recSource.disconnect(); }catch(e){}
+
+  $("task-status").textContent = "Processing audio…"; $("task-status").className = "status";
+
+  // encode off the click frame so the UI can paint "Processing…"
+  setTimeout(() => {
+    try{
+      recordedBlob = encodeMp3(flattenPCM(), recSampleRate);
+    }catch(err){
+      $("task-status").textContent = "Could not encode audio: " + err.message;
+      $("task-status").className = "status err";
+      showRetry();
+      cleanupRecCtx();
+      return;
+    }
+    cleanupRecCtx();
+    uploadRecording();
+  }, 30);
+}
+
+function cleanupRecCtx(){
+  if(recCtx){ recCtx.close().catch(()=>{}); recCtx = null; }
+  recSource = null; recProcessor = null;
+}
+
+/* ---- PCM → mp3 ---- */
+function flattenPCM(){
+  const out = new Float32Array(pcmLength);
+  let off = 0;
+  for(const c of pcmChunks){ out.set(c, off); off += c.length; }
+  pcmChunks = [];
+  return out;
+}
+
+const MP3_RATES = [8000,11025,12000,16000,22050,24000,32000,44100,48000];
+
+function resampleLinear(buf, fromRate, toRate){
+  if(fromRate === toRate) return buf;
+  const ratio = fromRate / toRate;
+  const newLen = Math.max(1, Math.round(buf.length / ratio));
+  const out = new Float32Array(newLen);
+  for(let i=0;i<newLen;i++){
+    const pos = i * ratio;
+    const i0 = Math.floor(pos);
+    const i1 = Math.min(i0 + 1, buf.length - 1);
+    const frac = pos - i0;
+    out[i] = buf[i0]*(1-frac) + buf[i1]*frac;
+  }
+  return out;
+}
+
+function encodeMp3(float32, sampleRate){
+  const lib = (typeof lamejs !== "undefined") ? lamejs : window.lamejs;
+  if(!lib || !lib.Mp3Encoder) throw new Error("encoder unavailable");
+
+  // mp3 only accepts certain sample rates — resample if the device gives an odd one
+  let rate = sampleRate, data = float32;
+  if(MP3_RATES.indexOf(rate) === -1){ data = resampleLinear(float32, sampleRate, 44100); rate = 44100; }
+
+  // float [-1,1] → int16
+  const i16 = new Int16Array(data.length);
+  for(let i=0;i<data.length;i++){
+    let s = data[i];
+    if(s > 1) s = 1; else if(s < -1) s = -1;
+    i16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+
+  const enc = new lib.Mp3Encoder(1, rate, MP3_KBPS);
+  const block = 1152;
+  const parts = [];
+  for(let i=0;i<i16.length;i+=block){
+    const chunk = i16.subarray(i, i+block);
+    const buf = enc.encodeBuffer(chunk);
+    if(buf.length) parts.push(new Uint8Array(buf));
+  }
+  const tail = enc.flush();
+  if(tail.length) parts.push(new Uint8Array(tail));
+
+  return new Blob(parts, { type: "audio/mpeg" });
 }
 
 async function uploadRecording(){
   const t = TASKS[idx];
+  if(!recordedBlob || recordedBlob.size < 800){
+    $("task-status").textContent = "That recording was empty — please record again.";
+    $("task-status").className = "status err";
+    recBtnMode = "record"; $("rec-btn").disabled = false; $("rec-label").textContent = "Start recording";
+    return;
+  }
   $("task-status").textContent = "Uploading…"; $("task-status").className="status";
   try{
     const base64 = await blobToBase64(recordedBlob);
-    const fileName = `${student.name.replace(/[^\w]+/g,"_")}_${t.task_id}_${Date.now()}.${extFor(recMime)}`;
+    const fileName = `${student.name.replace(/[^\w]+/g,"_")}_${t.task_id}_${Date.now()}.mp3`;
     const res = await api({
-      action:"upload", base64, fileName, mimeType:recMime,
+      action:"upload", base64, fileName, mimeType:"audio/mpeg",
       studentName: student.name, taskId: t.task_id
     });
     if(!res.ok) throw new Error(res.error || "upload rejected");
