@@ -443,7 +443,7 @@ $("rec-btn").addEventListener("click", () => {
 });
 
 function startRecording(){
-  hide("next-button);
+  hide("next-btn");                             // clear stale Next on a re-record
   const t = TASKS[idx];
   const secs = Number(t.response_seconds) || (isInterview(t) ? 45 : 12);
 
@@ -472,10 +472,8 @@ function startRecording(){
   $("play-btn").disabled = true;
   $("rec-label").textContent = "Stop";
   recBtnMode = "stop";
-  $("rec-btn").disabled = true;                                         // ADD
-  setTimeout(() => { if (recBtnMode === "stop") $("rec-btn").disabled = false; }, 800);  // ADD
-  $("rec-btn").classList.add("pulse");
-  recBtnMode = "stop";
+  $("rec-btn").disabled = true;                                                          // lock out the double-click
+  setTimeout(() => { if (recBtnMode === "stop") $("rec-btn").disabled = false; }, 800);  // re-enable once a real recording is underway
   $("rec-btn").classList.add("pulse");
   $("timer").classList.add("live");
   $("task-status").textContent = "Recording…"; $("task-status").className="status";
@@ -625,6 +623,7 @@ async function uploadRecording(){
     showRetry();
   }
 }
+
 function showRetry(){
   recBtnMode = "retry";
   $("rec-btn").disabled = false;
