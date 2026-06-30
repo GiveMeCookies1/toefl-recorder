@@ -617,19 +617,14 @@ async function uploadRecording(){
       studentName: student.name, taskId: t.task_id
     });
     if(!res.ok) throw new Error(res.error || "upload rejected");
-    $("task-status").textContent = "Uploaded ✓ — move on, or re-record once if you need to.";
-    $("task-status").className = "status ok";
+    $("task-status").textContent = "Uploaded ✓"; $("task-status").className="status ok";
     show("next-btn");
-    recBtnMode = "record";                 // failsafe: one more take
-    $("rec-btn").disabled = false;
-    $("rec-label").textContent = "Re-record";
   }catch(err){
     $("task-status").textContent = "Upload failed: " + err.message;
     $("task-status").className = "status err";
     showRetry();
   }
 }
-
 function showRetry(){
   recBtnMode = "retry";
   $("rec-btn").disabled = false;
