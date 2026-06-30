@@ -443,6 +443,7 @@ $("rec-btn").addEventListener("click", () => {
 });
 
 function startRecording(){
+  hide("next-button);
   const t = TASKS[idx];
   const secs = Number(t.response_seconds) || (isInterview(t) ? 45 : 12);
 
@@ -470,6 +471,10 @@ function startRecording(){
 
   $("play-btn").disabled = true;
   $("rec-label").textContent = "Stop";
+  recBtnMode = "stop";
+  $("rec-btn").disabled = true;                                         // ADD
+  setTimeout(() => { if (recBtnMode === "stop") $("rec-btn").disabled = false; }, 800);  // ADD
+  $("rec-btn").classList.add("pulse");
   recBtnMode = "stop";
   $("rec-btn").classList.add("pulse");
   $("timer").classList.add("live");
@@ -501,8 +506,27 @@ function stopRecording(){
 
   // encode off the click frame so the UI can paint "Processing…"
   setTimeout(() => {
+    const pcm = flattenPCM();
+    const durationSec = pcm.length / recSampleRate;
+    let peak = 0;
+    for (let i = 0; i < pcm.length; i++){ const a = Math.abs(pcm[i]); if (a > peak) peak = a; }
+
+    if (durationSec < 1.0 || peak < 0.01){       // too short, or effectively silent
+      cleanupRecCtx();
+      $("task-status").textContent = durationSec < 1.0
+        ? "That recording was too short — please record your full answer."
+        : "We couldn't hear anything. Check your mic, then record again.";
+      $("task-status").className = "status err";
+      recBtnMode = "record";
+      $("rec-btn").disabled = false;
+      $("rec-label").textContent = "Start recording";
+      $("rec-btn").classList.remove("pulse");
+      $("timer").classList.remove("live");
+      return;                                     // nothing uploaded — no blank slips through
+    }
+
     try{
-      recordedBlob = encodeMp3(flattenPCM(), recSampleRate);
+      recordedBlob = encodeMp3(pcm, recSampleRate);
     }catch(err){
       $("task-status").textContent = "Could not encode audio: " + err.message;
       $("task-status").className = "status err";
@@ -593,8 +617,12 @@ async function uploadRecording(){
       studentName: student.name, taskId: t.task_id
     });
     if(!res.ok) throw new Error(res.error || "upload rejected");
-    $("task-status").textContent = "Uploaded ✓"; $("task-status").className="status ok";
+    $("task-status").textContent = "Uploaded ✓ — move on, or re-record once if you need to.";
+    $("task-status").className = "status ok";
     show("next-btn");
+    recBtnMode = "record";                 // failsafe: one more take
+    $("rec-btn").disabled = false;
+    $("rec-label").textContent = "Re-record";
   }catch(err){
     $("task-status").textContent = "Upload failed: " + err.message;
     $("task-status").className = "status err";
